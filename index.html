@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Free Image Compressor</title>
+
+<style>
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:#f5f7fb;
+  color:#172033;
+}
+
+.container{
+  max-width:900px;
+  margin:40px auto;
+  padding:20px;
+}
+
+.card{
+  background:white;
+  border-radius:22px;
+  padding:30px;
+  box-shadow:0 10px 35px rgba(0,0,0,.08);
+}
+
+h1{
+  text-align:center;
+  margin:0 0 10px;
+  font-size:32px;
+}
+
+.subtitle{
+  text-align:center;
+  color:#667085;
+  margin-bottom:30px;
+}
+
+.upload{
+  border:2px dashed #b8c0cc;
+  border-radius:18px;
+  padding:45px 20px;
+  text-align:center;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.upload:hover{
+  border-color:#111827;
+  background:#fafafa;
+}
+
+.upload input{
+  display:none;
+}
+
+.upload-icon{
+  font-size:50px;
+  margin-bottom:10px;
+}
+
+.upload strong{
+  display:block;
+  font-size:19px;
+  margin-bottom:8px;
+}
+
+.upload span{
+  color:#667085;
+  font-size:14px;
+}
+
+.controls{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+  margin-top:25px;
+}
+
+.control{
+  background:#f8f9fc;
+  padding:18px;
+  border-radius:15px;
+}
+
+.control label{
+  display:block;
+  font-weight:bold;
+  margin-bottom:10px;
+}
+
+input[type="range"]{
+  width:100%;
+}
+
+select{
+  width:100%;
+  padding:12px;
+  border:1px solid #d0d5dd;
+  border-radius:10px;
+  background:white;
+}
+
+#qualityValue{
+  font-weight:bold;
+}
+
+.image-list{
+  margin-top:25px;
+}
+
+.image-item{
+  border:1px solid #e4e7ec;
+  border-radius:15px;
+  padding:15px;
+  margin-bottom:15px;
+}
+
+.image-info{
+  display:flex;
+  justify-content:space-between;
+  gap:15px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.image-name{
+  font-weight:bold;
+  word-break:break-word;
+}
+
+.result{
+  margin-top:8px;
+  color:#667085;
+  font-size:14px;
+}
+
+.download{
+  display:inline-block;
+  margin-top:12px;
+  padding:10px 15px;
+  border-radius:9px;
+  background:#111827;
+  color:white;
+  text-decoration:none;
+  font-size:14px;
+}
+
+.download:hover{
+  opacity:.85;
+}
+
+button{
+  border:0;
+  cursor:pointer;
+}
+
+.download-all{
+  width:100%;
+  margin-top:15px;
+  padding:15px;
+  border-radius:12px;
+  background:#111827;
+  color:white;
+  font-size:16px;
+  font-weight:bold;
+}
+
+.clear{
+  width:100%;
+  margin-top:10px;
+  padding:13px;
+  border-radius:12px;
+  background:#eef0f4;
+  color:#172033;
+  font-size:15px;
+}
+
+.hidden{
+  display:none;
+}
+
+.footer{
+  text-align:center;
+  color:#98a2b3;
+  font-size:13px;
+  margin-top:20px;
+}
+
+@media(max-width:650px){
+  .container{
+    margin:15px auto;
+    padding:10px;
+  }
+
+  .card{
+    padding:20px;
+  }
+
+  h1{
+    font-size:25px;
+  }
+
+  .controls{
+    grid-template-columns:1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<h1>🖼️ Free Image Compressor</h1>
+
+<div class="subtitle">
+Compress your images quickly and easily — completely free.
+</div>
+
+<label class="upload">
+
+<input type="file" id="fileInput" accept="image/*" multiple>
+
+<div class="upload-icon">📁</div>
+
+<strong>Choose Images</strong>
+
+<span>JPG, JPEG, PNG or WebP • Multiple images supported</span>
+
+</label>
+
+<div class="controls">
+
+<div class="control">
+
+<label>
+Quality: <span id="qualityValue">80%</span>
+</label>
+
+<input type="range" id="quality" min="10" max="100" value="80">
+
+</div>
+
+<div class="control">
+
+<label>Output Format</label>
+
+<select id="format">
+
+<option value="image/jpeg">JPG</option>
+<option value="image/webp">WebP</option>
+<option value="image/png">PNG</option>
+
+</select>
+
+</div>
+
+</div>
+
+<div id="imageList" class="image-list"></div>
+
+<button id="downloadAll" class="download-all hidden">
+⬇️ Download All
+</button>
+
+<button id="clearBtn" class="clear hidden">
+🗑️ Clear All
+</button>
+
+<div class="footer">
+Your images are processed directly in your browser. They are not uploaded to a server.
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+const fileInput = document.getElementById("fileInput");
+const quality = document.getElementById("quality");
+const qualityValue = document.getElementById("qualityValue");
+const format = document.getElementById("format");
+const imageList = document.getElementById("imageList");
+const downloadAll = document.getElementById("downloadAll");
+const clearBtn = document.getElementById("clearBtn");
+
+let files = [];
+let results = [];
+
+quality.addEventListener("input", () => {
+  qualityValue.textContent = quality.value + "%";
+});
+
+fileInput.addEventListener("change", () => {
+
+  files = Array.from(fileInput.files);
+
+  imageList.innerHTML = "";
+  results = [];
+
+  if(files.length > 0){
+
+    downloadAll.classList.remove("hidden");
+    clearBtn.classList.remove("hidden");
+
+    files.forEach((file, index) => {
+      compressImage(file, index);
+    });
+
+  }
+
+});
+
+function compressImage(file, index){
+
+  const reader = new FileReader();
+
+  reader.onload = function(e){
+
+    const img = new Image();
+
+    img.onload = function(){
+
+      const canvas = document.createElement("canvas");
+
+      const ctx = canvas.getContext("2d");
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      ctx.drawImage(img, 0, 0);
+
+      const selectedQuality = Number(quality.value) / 100;
+
+      canvas.toBlob(function(blob){
+
+        const url = URL.createObjectURL(blob);
+
+        const originalSize = file.size;
+        const compressedSize = blob.size;
+
+        const saved = originalSize > 0
+          ? Math.max(0, ((originalSize - compressedSize) / originalSize) * 100)
+          : 0;
+
+        const item = document.createElement("div");
+
+        item.className = "image-item";
+
+        item.innerHTML = `
+
+          <div class="image-info">
+
+            <div>
+              <div class="image-name">${escapeHtml(file.name)}</div>
+
+              <div class="result">
+                Original: ${formatSize(originalSize)}
+                →
+                Compressed: ${formatSize(compressedSize)}
+                <br>
+                Saved: ${saved.toFixed(1)}%
+              </div>
+            </div>
+
+          </div>
+
+          <a
+            class="download"
+            href="${url}"
+            download="${getFileName(file.name)}"
+          >
+            ⬇️ Download
+          </a>
+
+        `;
+
+        imageList.appendChild(item);
+
+        results.push({
+          url:url,
+          name:getFileName(file.name)
+        });
+
+      }, format.value, selectedQuality);
+
+    };
+
+    img.src = e.target.result;
+
+  };
+
+  reader.readAsDataURL(file);
+
+}
+
+function formatSize(bytes){
+
+  if(bytes < 1024){
+    return bytes + " B";
+  }
+
+  if(bytes < 1024 * 1024){
+    return (bytes / 1024).toFixed(1) + " KB";
+  }
+
+  return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+}
+
+function getFileName(name){
+
+  const base = name.replace(/\.[^/.]+$/, "");
+
+  let extension = "jpg";
+
+  if(format.value === "image/webp"){
+    extension = "webp";
+  }
+
+  if(format.value === "image/png"){
+    extension = "png";
+  }
+
+  return base + "-compressed." + extension;
+}
+
+function escapeHtml(text){
+
+  const div = document.createElement("div");
+
+  div.textContent = text;
+
+  return div.innerHTML;
+
+}
+
+downloadAll.addEventListener("click", () => {
+
+  results.forEach((item, index) => {
+
+    setTimeout(() => {
+
+      const a = document.createElement("a");
+
+      a.href = item.url;
+      a.download = item.name;
+
+      document.body.appendChild(a);
+
+      a.click();
+
+      a.remove();
+
+    }, index * 400);
+
+  });
+
+});
+
+clearBtn.addEventListener("click", () => {
+
+  files = [];
+  results = [];
+
+  fileInput.value = "";
+
+  imageList.innerHTML = "";
+
+  downloadAll.classList.add("hidden");
+  clearBtn.classList.add("hidden");
+
+});
+
+</script>
+
+</body>
+</html>
